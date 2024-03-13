@@ -154,7 +154,7 @@ class Redis(object):
     @classmethod
     def delete(cls, *names):
         """
-        删除一个或者多个
+        删除一个或者多个key
         """
         r = cls._get_r()
         r.delete(*names)
@@ -162,10 +162,28 @@ class Redis(object):
     @classmethod
     def hdel(cls, name, key):
         """
-        删除指定hash表的键值
+        删除指定hash 表的键值
         """
         r = cls._get_r()
         r.hdel(name, key)
+    
+    @classmethod
+    def list_push(cls, name, key):
+        """
+        将一个或多个值插入到列表name头部
+        """
+        r = cls._get_r()
+        r.lpush(name, key)
+
+    @classmethod 
+    def set_add(cls, name, key):
+        """
+        将一个或多个值插入到无序集合name中
+        """
+        r = cls._get_r()
+        r.sadd(name, key)
+
+        # r.zadd(name, key)
 
     @classmethod
     def expire(cls, name, expire=None):
