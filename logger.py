@@ -1,49 +1,84 @@
 import logging
 import datetime
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import RotatingFileHandler
 import os
-import time
 
-logging_handler = None
-error_handle = None
+log_level = "INFO"
 
-#TODO: 直接单例返回 
+LOG_LEVEL_MAP = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "CRITICAL": logging.CRITICAL,
+    "FATAL": logging.FATAL,
+    "ERROR": logging.ERROR,
+}
+
+
+# TODO: 直接单例返回
 class Logger:
     """
     logging日志
     TODO: 修改调用方式。。。重写，删除enable 参数
 
     """
-    def __init__(self, header='', enable = True, log_level=logging.DEBUG):
-        self.header = header
-        self.logger = logging.getLogger(header)
-        if enable:
-            self.log_level = log_level
-        else:
-            self.log_level = logging.NOTSET
+
+    def __init__(self, log_level=log_level):
+        self.logger = logging.getLogger()
+        self.log_level = log_level
+        self.init_logger()
+        self.reset_logger()
+        self.custom_logger()
+    
+    def init_logger(self):
+        self.log_dir = "logs"
+        os.makedirs(self.log_dir, exist_ok=True)
+    
+
+    def reset_logger(self):
+        # 每次被调用后，清空已经存在handler
+        self.logger.handlers.clear()
+
+    def custom_logger(self):
+        self.log_level = LOG_LEVEL_MAP.get(self.log_level, logging.INFO)
         self.logger.setLevel(self.log_level)
-        if logging_handler is not None:
-            self._logger.addHandler(logging_handler)
-        
         self.backup_count = 5  # 最多存放日志的数量
 
         # 控制台输出格式
-        console_handler = logging.StreamHandler()                  # 定义console handler
-        formatter = logging.Formatter(f'%(asctime)s {self.header} %(lineno)d: %(levelname)s  %(message)s')  #定义该handler格式
+        console_handler = logging.StreamHandler()  # 定义console handler
+        fmt = f"%(asctime)s-%(processName)s-%(filename)s:%(lineno)d:%(levelname)s %(message)s"
+        formatter = logging.Formatter(fmt)  # 定义该handler格式
+
+        # TODO: 确认不会引发其他问题 txueduo
+        record = logging.LogRecord(
+            name='my_logger',
+            level=logging.NOTSET,
+            pathname="",
+            lineno=10,
+            msg='This is a log message',
+            args=None,
+            exc_info=None
+        )
+        process_name = (formatter.format(record).split("-")[3]) # ['2024', '04', '30 13:07:59,004', 'MainProcess', ':10:NOTSET This is a log message']
+        process_name = process_name if process_name == "MainProcess" else "SubProcess"
         console_handler.setFormatter(formatter)
         console_handler.setLevel(self.log_level)
         # 文件写入格式
-        self.log_dir = "logs"
-        os.makedirs(self.log_dir,exist_ok=True)
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d")
-        file_handler = TimedRotatingFileHandler(filename=os.path.join(self.log_dir, f'liveroom_{timestamp}.log'), when='D',
-                                                    interval=1, backupCount=self.backup_count, delay=True,
-                                                    encoding='utf-8')
+        filename = os.path.join(self.log_dir, f"liveroom_{timestamp}_{process_name}.log")
+        file_handler = RotatingFileHandler(
+            filename=filename,
+            backupCount=self.backup_count,
+            maxBytes=1024*1024*512, # 暂时设置为512m
+            delay=True,
+            encoding="utf-8",
+        )
+
         file_handler.setFormatter(formatter)
         file_handler.setLevel(self.log_level)
         self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
-        # 获取日志记录
-    
+
     def get_logger(self):
         return self.logger
