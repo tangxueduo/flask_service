@@ -1,0 +1,3 @@
+/home/jiangzhao/workspace/txd/flask_service/CMakeFiles/main.dir
+/home/jiangzhao/workspace/txd/flask_service/CMakeFiles/edit_cache.dir
+/home/jiangzhao/workspace/txd/flask_service/CMakeFiles/rebuild_cache.dir
